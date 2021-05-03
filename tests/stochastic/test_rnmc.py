@@ -37,6 +37,23 @@ test_dir = os.path.join(
     "reaction_network_files",
 )
 
+class TestReactionGenerator(PymatgenTest):
+    def test_reaction_generator(self):
+
+        molecule_entries = loadfn(os.path.join(test_dir, "ronalds_MoleculeEntry.json"))
+        reaction_generator = ReactionIterator(molecule_entries)
+
+        reaction_set = set()
+        counter = 0
+
+        for reaction in reaction_generator:
+            reaction_set.add(frozenset(reaction[0] + reaction[1]))
+            counter += 1
+
+        self.assertEqual(counter, 119)
+        self.assertEqual(len(reaction_set), 106)
+
+
 
 class RNMC(PymatgenTest):
     def test_rnmc(self):
