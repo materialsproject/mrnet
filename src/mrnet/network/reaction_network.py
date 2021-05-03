@@ -2099,28 +2099,6 @@ class ReactionGenerator(MSONable):
 
         return network
 
-    @staticmethod
-    def softplus(free_energy: float) -> float:
-        """
-        Method to determine edge weight using softplus cost function
-        NOTE: This cost function is unphysical and should only be used when
-        neither rexp nor exponent allow prerequisite costs to be solved.
-        """
-        return softplus(free_energy)
-
-    @staticmethod
-    def exponent(free_energy: float) -> float:
-        """
-        Method to determine edge weight using exponent cost function
-        """
-        return exponent(free_energy)
-
-    @staticmethod
-    def rexp(free_energy: float) -> float:
-        """
-        Method to determine edge weight using exponent(dG/kt) cost function
-        """
-        return rexp(free_energy)
 
     def build(
         self,
