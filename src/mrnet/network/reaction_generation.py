@@ -22,7 +22,7 @@ __author__ = "Sam Blau, Hetal Patel, Xiaowei Xie, Evan Spotte-Smith, Daniel Bart
 __maintainer__ = "Daniel Barter"
 
 
-class ReactionGenerator:
+class ReactionIterator:
     """
     takes a list of molecule entries and produces the concerted
     reactions in batches grouped by intermediate by calling

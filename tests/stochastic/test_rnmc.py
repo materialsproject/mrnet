@@ -10,7 +10,7 @@ from scipy.constants import N_A
 from monty.serialization import loadfn, dumpfn
 from pymatgen.util.testing import PymatgenTest
 
-from mrnet.network.reaction_generation import ReactionGenerator
+from mrnet.network.reaction_generation import ReactionIterator
 from mrnet.stochastic.serialize import (
     SerializeNetwork,
     serialize_simulation_parameters,
@@ -66,7 +66,7 @@ class RNMC(PymatgenTest):
         initial_state_data_1 = [(li_plus_mol_entry, 300), (ec_mol_entry, 30)]
         initial_state_data_2 = [(li_plus_mol_entry, 30), (ec_mol_entry, 300)]
 
-        reaction_generator = ReactionGenerator(molecule_entries)
+        reaction_generator = ReactionIterator(molecule_entries)
 
         # for large networks, you want to use shard_size=2000000
         SerializeNetwork(network_folder_1, reaction_generator, shard_size=100)

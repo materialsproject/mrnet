@@ -19,7 +19,7 @@ from pymatgen.analysis.local_env import OpenBabelNN, metal_edge_extender
 from mrnet.core.mol_entry import MoleculeEntry
 from mrnet.core.reactions import RedoxReaction
 from mrnet.network.reaction_network import ReactionPath, ReactionNetwork
-from mrnet.network.reaction_generation import ReactionGenerator
+from mrnet.network.reaction_generation import ReactionIterator
 
 try:
     import openbabel as ob
@@ -39,7 +39,7 @@ class TestReactionGenerator(PymatgenTest):
     def test_reaction_generator(self):
 
         molecule_entries = loadfn(os.path.join(test_dir, "ronalds_MoleculeEntry.json"))
-        reaction_generator = ReactionGenerator(molecule_entries)
+        reaction_generator = ReactionIterator(molecule_entries)
 
         reaction_set = set()
         counter = 0

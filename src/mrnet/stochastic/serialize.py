@@ -12,7 +12,7 @@ from pymatgen.analysis.local_env import OpenBabelNN
 from pymatgen.analysis.fragmenter import metal_edge_extender
 
 from mrnet.network.reaction_network import ReactionNetwork
-from mrnet.network.reaction_generation import ReactionGenerator
+from mrnet.network.reaction_generation import ReactionIterator
 from mrnet.core.mol_entry import MoleculeEntry
 from mrnet.utils.constants import ROOM_TEMP, PLANCK, KB
 
@@ -140,7 +140,7 @@ class SerializeNetwork:
     def __init__(
         self,
         folder: str,
-        reaction_generator: ReactionGenerator,
+        reaction_generator: ReactionIterator,
         shard_size: int = 1000000,
         commit_barrier: int = 10000,
         temperature=ROOM_TEMP,
