@@ -1367,12 +1367,11 @@ class ReactionNetwork(MSONable):
 
         return self.PRs, paths, top_path_list
 
-    @staticmethod
-    def mols_w_cuttoff(RN_pr_solved, cutoff=0, build_pruned_network=True):
+    def mols_w_cuttoff(self, cutoff=0, build_pruned_network=True):
         """
         A method to identify molecules reached by dG <= cutoff
 
-        :param RN_pr_solved: instance of reaction network
+        :param self: instance of reaction network
         :param: cutoff: dG value
         :param: build_pruned_network: if true a network with pruned entries will be build
         :return: mols_to_keep: list of molecule nodes that can be reached by dG <= cutoff
@@ -1380,18 +1379,18 @@ class ReactionNetwork(MSONable):
         """
 
         pruned_PRs = {}
-        for PR_node in RN_pr_solved.PR_byproducts:
+        for PR_node in self.PR_byproducts:
             if (
-                RN_pr_solved.PRs[PR_node] != {}
-                and RN_pr_solved.PR_byproducts[PR_node] != {}
+                self.PRs[PR_node] != {}
+                and self.PR_byproducts[PR_node] != {}
             ):
-                min_start = RN_pr_solved.PR_byproducts[PR_node]["start"]
+                min_start = self.PR_byproducts[PR_node]["start"]
                 if (
-                    RN_pr_solved.PRs[PR_node][min_start].overall_free_energy_change
+                    self.PRs[PR_node][min_start].overall_free_energy_change
                     <= cutoff
                 ):
                     pruned_PRs[PR_node] = {}
-                    pruned_PRs[PR_node][min_start] = RN_pr_solved.PRs[PR_node][
+                    pruned_PRs[PR_node][min_start] = self.PRs[PR_node][
                         min_start
                     ]
 
@@ -1408,7 +1407,7 @@ class ReactionNetwork(MSONable):
         mols_to_keep.sort()
 
         pruned_entries_list = []
-        for entry in RN_pr_solved.entries_list:
+        for entry in self.entries_list:
             if entry.parameters["ind"] in mols_to_keep:
                 pruned_entries_list.append(entry)
 

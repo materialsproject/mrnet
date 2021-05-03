@@ -873,8 +873,8 @@ class TestReactionNetwork(PymatgenTest):
 
         RN_loaded = copy.deepcopy(RN_pr_solved)
 
-        mols_to_keep, pruned_entries_list = ReactionNetwork.mols_w_cuttoff(
-            RN_loaded, 0, build_pruned_network=False
+        mols_to_keep, pruned_entries_list = RN_loaded.mols_w_cuttoff(
+            0, build_pruned_network=False
         )
 
         self.assertEqual(len(mols_to_keep), 236)
