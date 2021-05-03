@@ -988,7 +988,7 @@ class TestReactionNetwork(PymatgenTest):
             v3_unique_iter1,
             v3_all_iter1,
         ) = RN_loaded.identify_concerted_rxns_via_intermediates(
-            RN_loaded, single_elem_interm_ignore=[], update_matrix=True
+            single_elem_interm_ignore=[], update_matrix=True
         )
         unique_reactions = loadfn(
             os.path.join(
@@ -1055,7 +1055,6 @@ class TestReactionNetwork(PymatgenTest):
             reactions_with_nodes,
         ) = RN_loaded.identify_concerted_rxns_for_specific_intermediate(
             RN_loaded.entries_list[1],
-            RN_loaded,
             single_elem_interm_ignore=[],
             update_matrix=False,
         )
@@ -1075,7 +1074,7 @@ class TestReactionNetwork(PymatgenTest):
             os.path.join(test_dir, "add_concerted_unittest_rxn_list.json")
         )
 
-        RN_loaded.add_concerted_rxns(RN_loaded, reactions)
+        RN_loaded.add_concerted_rxns(reactions)
 
         # self.assertEqual(len(RN_loaded.graph.nodes), 61600)
         # self.assertEqual(len(RN_loaded.graph.edges), 181703)

@@ -41,9 +41,8 @@ class ReactionGenerator:
         (
             reactions,
             _,
-        ) = ReactionNetwork.identify_concerted_rxns_for_specific_intermediate(
+        ) = self.rn.identify_concerted_rxns_for_specific_intermediate(
             entry,
-            self.rn,
             mols_to_keep=[e.parameters["ind"] for e in self.rn.entries_list],
             single_elem_interm_ignore=self.single_elem_interm_ignore,
         )

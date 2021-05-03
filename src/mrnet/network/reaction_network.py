@@ -1527,16 +1527,15 @@ class ReactionNetwork(MSONable):
 
         return self.matrix
 
-    @staticmethod
     def identify_concerted_rxns_via_intermediates(
-        RN,
+        self,
         mols_to_keep=None,
         single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
         update_matrix=False,
     ):
         """
             A method to identify concerted reactions via high enery intermediate molecules
-        :param RN: Reaction network built
+        :param self: Reaction network built
         :param mols_to_keep: List of pruned molecules, if not running then a list of all molecule nodes in the
         RN
         :param single_elem_interm_ignore: single_elem_interm_ignore: List of formula of high energy
@@ -1547,17 +1546,17 @@ class ReactionNetwork(MSONable):
 
         print("identify_concerted_rxns_via_intermediates start", time.time())
         if mols_to_keep is None:
-            mols_to_keep = list(range(0, len(RN.entries_list)))
+            mols_to_keep = list(range(0, len(self.entries_list)))
         if update_matrix:
-            RN.matrix2 = None
+            self.matrix2 = None
         reactions = []
         unique_reactions = []
-        for entry in RN.entries_list:
+        for entry in self.entries_list:
             (
                 unique_rxns,
                 rxns_with_nodes,
-            ) = RN.identify_concerted_rxns_for_specific_intermediate(
-                entry, RN, mols_to_keep, single_elem_interm_ignore, update_matrix
+            ) = self.identify_concerted_rxns_for_specific_intermediate(
+                entry, mols_to_keep, single_elem_interm_ignore, update_matrix
             )
             unique_reactions.append(unique_rxns)
             reactions.append(rxns_with_nodes)
@@ -1590,10 +1589,9 @@ class ReactionNetwork(MSONable):
                     matrix[reac][prod].append((nstr, reaction[2], "c"))
         return matrix
 
-    @staticmethod
     def identify_concerted_rxns_for_specific_intermediate(
+        self,
         entry: MoleculeEntry,
-        RN: RN_type,
         mols_to_keep=None,
         single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
         update_matrix=False,
@@ -1615,7 +1613,7 @@ class ReactionNetwork(MSONable):
         entry_ind = entry.parameters["ind"]  # type: int
 
         if mols_to_keep is None:
-            mols_to_keep = list(range(0, len(RN.entries_list)))
+            mols_to_keep = list(range(0, len(self.entries_list)))
         not_wanted_formula = single_elem_interm_ignore
 
         if (
@@ -1623,13 +1621,13 @@ class ReactionNetwork(MSONable):
             and entry.parameters["ind"] in mols_to_keep
         ):
 
-            if RN.matrix is None:
-                RN.build_matrix()
+            if self.matrix is None:
+                self.build_matrix()
             if update_matrix:
-                RN.matrix2 = copy.deepcopy(RN.matrix)
+                self.matrix2 = copy.deepcopy(self.matrix)
 
-            row = RN.matrix[entry_ind]  # type: ignore
-            col = RN.matrix_inverse[entry_ind]
+            row = self.matrix[entry_ind]  # type: ignore
+            col = self.matrix_inverse[entry_ind]
 
             for kr, vr in row.items():
                 for kc, vc in col.items():
@@ -1651,17 +1649,16 @@ class ReactionNetwork(MSONable):
                                         if update_matrix:
                                             reaction = (rxn1[0], rxn1[1], total_dG)
                                             ReactionNetwork.add_reactions_to_matrix(
-                                                RN.matrix2, reaction
+                                                self.matrix2, reaction
                                             )
 
         return rxn_from_filer_iter1, rxn_from_filer_iter1_nodes
 
-    @staticmethod
-    def add_concerted_rxns(RN, reactions):
+    def add_concerted_rxns(self, reactions):
         """
             A method to add concerted reactions (obtained from identify_concerted_rxns_via_intermediates() method)to
             the ReactonNetwork
-        :param RN: build Reaction Network
+        :param self: build Reaction Network
         :param reactions: list of reactions obtained from identify_concerted_rxns_via_intermediates() method
         :return: reaction network with concerted reactions added
         """
@@ -1672,79 +1669,79 @@ class ReactionNetwork(MSONable):
         c3 = 0
         c4 = 0
         mol_id_to_mol_entry_dict = {}
-        for i in RN.entries_list:
+        for i in self.entries_list:
             mol_id_to_mol_entry_dict[int(i.parameters["ind"])] = i
         for reaction in reactions:
             if len(reaction[0]) == 1 and len(reaction[1]) == 1:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
                 reactants = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 products = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 cr = ConcertedReaction([reactants], [products])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c1 = c1 + 1
 
             elif len(reaction[0]) == 1 and len(reaction[1]) == 2:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
-                assert int(reaction[1][1]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
+                assert int(reaction[1][1]) in self.graph.nodes
                 reactant_0 = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 product_0 = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 product_1 = mol_id_to_mol_entry_dict[int(reaction[1][1])]
                 cr = ConcertedReaction([reactant_0], [product_0, product_1])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
 
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c2 = c2 + 1
             elif len(reaction[0]) == 2 and len(reaction[1]) == 1:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[0][1]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[0][1]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
                 reactant_0 = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 PR = mol_id_to_mol_entry_dict[int(reaction[0][1])]
                 product_0 = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 cr = ConcertedReaction([reactant_0, PR], [product_0])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
 
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c3 = c3 + 1
             elif len(reaction[0]) == 2 and len(reaction[1]) == 2:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[0][1]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
-                assert int(reaction[1][1]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[0][1]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
+                assert int(reaction[1][1]) in self.graph.nodes
                 reactant_0 = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 PR = mol_id_to_mol_entry_dict[int(reaction[0][1])]
                 product_0 = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 product_1 = mol_id_to_mol_entry_dict[int(reaction[1][1])]
                 cr = ConcertedReaction([reactant_0, PR], [product_0, product_1])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
 
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c4 = c4 + 1
         total_num_concerted = c1 + c2 + c3 + c4
-        RN.PR_record = RN.build_PR_record()
-        RN.Reactant_record = RN.build_reactant_record()
+        self.PR_record = self.build_PR_record()
+        self.Reactant_record = self.build_reactant_record()
         print("number of concerted reactions added", total_num_concerted)
         print("add_concerted_rxns end", time.time())
-        return RN
+        return self
 
     def as_dict(self) -> dict:
         entries = dict()  # type: Dict[str, Dict[int, Dict[int, List[Dict[str, Any]]]]]
