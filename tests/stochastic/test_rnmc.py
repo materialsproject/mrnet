@@ -49,8 +49,11 @@ class TestReactionGenerator(PymatgenTest):
                 (tuple(reaction[0]),
                  tuple(reaction[1])))
 
-        h = hash(frozenset(reactions))
-        assert h == 5589200681633439233
+        result = frozenset(reactions)
+        with open(os.path.join(test_dir,'ronalds_concerteds.pickle'),'rb') as f:
+            ronalds_set = pickle.load(f)
+
+        assert result == ronalds_set
 
 
 
