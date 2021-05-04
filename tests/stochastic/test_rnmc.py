@@ -49,9 +49,8 @@ class TestReactionGenerator(PymatgenTest):
                 (tuple(reaction[0]),
                  tuple(reaction[1])))
 
-        h = hash(tuple(reactions))
-        assert h == -6555286744212922382
-
+        h = hash(frozenset(reactions))
+        assert h == 5589200681633439233
 
 
 
