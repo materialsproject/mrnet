@@ -723,14 +723,6 @@ class ReactionNetwork(MSONable):
         self.num_starts = len(starts)
         self.PR_byproducts = {}  # type: Dict[int, Dict[str, int]]
 
-        if len(self.graph.nodes) == 0:
-            self.build()  # actually construct the graph
-        if self.PR_record is None:
-            self.PR_record = self.build_PR_record()  # get a dict of PRs
-        if self.Reactant_record is None:
-            self.Reactant_record = (
-                self.build_reactant_record()
-            )  # get a dict of non-PR reactants
         orig_graph = copy.deepcopy(self.graph)
 
         for start in starts:  # all the molecular nodes
@@ -2121,7 +2113,6 @@ class ReactionGenerator(MSONable):
 
         print("build() end", time.time())
 
-        return self.graph
 
     def add_reaction(self, graph_representation: nx.DiGraph):
         """
