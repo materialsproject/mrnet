@@ -51,9 +51,9 @@ class TestReactionGenerator(PymatgenTest):
 
         result = frozenset(reactions)
         with open(os.path.join(test_dir,'ronalds_concerteds.pickle'),'rb') as f:
-            ronalds_set = pickle.load(f)
+            ronalds_concerteds = pickle.load(f)
 
-        assert result == ronalds_set
+        assert result == ronalds_concerteds
 
 
 
