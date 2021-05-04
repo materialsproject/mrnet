@@ -125,7 +125,7 @@ class ReactionIterator:
         single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
     ):
 
-        self.rn = ReactionGenerator.from_input_entries(input_entries)
+        self.rn = ReactionGenerator(input_entries)
         self.rn.build()
         self.single_elem_interm_ignore = single_elem_interm_ignore
 
