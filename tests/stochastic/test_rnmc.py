@@ -41,7 +41,7 @@ class TestReactionGenerator(PymatgenTest):
     def test_reaction_generator(self):
 
         molecule_entries = loadfn(os.path.join(test_dir, "ronalds_MoleculeEntry.json"))
-        reaction_generator = ReactionIterator(molecule_entries)
+        reaction_generator = ReactionIterator(molecule_entries, single_elem_interm_ignore=[])
         reactions = []
 
         for reaction in reaction_generator:
@@ -50,8 +50,12 @@ class TestReactionGenerator(PymatgenTest):
                  tuple(reaction[1])))
 
         result = frozenset(reactions)
-        with open(os.path.join(test_dir,'ronalds_concerteds.pickle'),'rb') as f:
-            ronalds_concerteds = pickle.load(f)
+
+        # ronalds concerteds is a json dump of reactions since we can't serialize frozensets to json
+        ronalds_concerteds_lists = loadfn(os.path.join(test_dir,'ronalds_concerteds.json'))
+        ronalds_concerteds = frozenset(
+            [tuple([tuple(x[0]),tuple(x[1])]) for x in ronalds_concerteds_lists]
+            )
 
         assert result == ronalds_concerteds
 
