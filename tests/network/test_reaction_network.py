@@ -19,7 +19,7 @@ from pymatgen.analysis.local_env import OpenBabelNN, metal_edge_extender
 from mrnet.core.mol_entry import MoleculeEntry
 from mrnet.core.reactions import RedoxReaction
 from mrnet.network.reaction_network import ReactionPath, ReactionNetwork
-from mrnet.network.reaction_generation import ReactionGenerator
+from mrnet.network.reaction_generation import ReactionIterator
 
 try:
     import openbabel as ob
@@ -34,22 +34,6 @@ test_dir = os.path.join(
     "reaction_network_files",
 )
 
-
-class TestReactionGenerator(PymatgenTest):
-    def test_reaction_generator(self):
-
-        molecule_entries = loadfn(os.path.join(test_dir, "ronalds_MoleculeEntry.json"))
-        reaction_generator = ReactionGenerator(molecule_entries)
-
-        reaction_set = set()
-        counter = 0
-
-        for reaction in reaction_generator:
-            reaction_set.add(frozenset(reaction[0] + reaction[1]))
-            counter += 1
-
-        self.assertEqual(counter, 119)
-        self.assertEqual(len(reaction_set), 106)
 
 
 class TestReactionPath(PymatgenTest):
@@ -873,8 +857,8 @@ class TestReactionNetwork(PymatgenTest):
 
         RN_loaded = copy.deepcopy(RN_pr_solved)
 
-        mols_to_keep, pruned_entries_list = ReactionNetwork.mols_w_cuttoff(
-            RN_loaded, 0, build_pruned_network=False
+        mols_to_keep, pruned_entries_list = RN_loaded.mols_w_cuttoff(
+            0, build_pruned_network=False
         )
 
         self.assertEqual(len(mols_to_keep), 236)
@@ -988,7 +972,7 @@ class TestReactionNetwork(PymatgenTest):
             v3_unique_iter1,
             v3_all_iter1,
         ) = RN_loaded.identify_concerted_rxns_via_intermediates(
-            RN_loaded, single_elem_interm_ignore=[], update_matrix=True
+            single_elem_interm_ignore=[], update_matrix=True
         )
         unique_reactions = loadfn(
             os.path.join(
@@ -1055,7 +1039,6 @@ class TestReactionNetwork(PymatgenTest):
             reactions_with_nodes,
         ) = RN_loaded.identify_concerted_rxns_for_specific_intermediate(
             RN_loaded.entries_list[1],
-            RN_loaded,
             single_elem_interm_ignore=[],
             update_matrix=False,
         )
@@ -1075,7 +1058,7 @@ class TestReactionNetwork(PymatgenTest):
             os.path.join(test_dir, "add_concerted_unittest_rxn_list.json")
         )
 
-        RN_loaded.add_concerted_rxns(RN_loaded, reactions)
+        RN_loaded.add_concerted_rxns(reactions)
 
         # self.assertEqual(len(RN_loaded.graph.nodes), 61600)
         # self.assertEqual(len(RN_loaded.graph.edges), 181703)

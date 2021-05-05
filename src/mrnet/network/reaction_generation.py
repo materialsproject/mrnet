@@ -3,7 +3,7 @@ from monty.json import MSONable
 import itertools
 import time as time
 from typing import Dict, List, Tuple, Union, Any, FrozenSet, Set
-from mrnet.network.reaction_network import ReactionNetwork
+from mrnet.network.reaction_network import ReactionGenerator
 from mrnet.core.mol_entry import MoleculeEntry
 from mrnet.core.reactions import (
     ConcertedReaction,
@@ -22,7 +22,7 @@ __author__ = "Sam Blau, Hetal Patel, Xiaowei Xie, Evan Spotte-Smith, Daniel Bart
 __maintainer__ = "Daniel Barter"
 
 
-class ReactionGenerator:
+class ReactionIterator:
     """
     takes a list of molecule entries and produces the concerted
     reactions in batches grouped by intermediate by calling
@@ -41,9 +41,8 @@ class ReactionGenerator:
         (
             reactions,
             _,
-        ) = ReactionNetwork.identify_concerted_rxns_for_specific_intermediate(
+        ) = self.rn.identify_concerted_rxns_for_specific_intermediate(
             entry,
-            self.rn,
             mols_to_keep=[e.parameters["ind"] for e in self.rn.entries_list],
             single_elem_interm_ignore=self.single_elem_interm_ignore,
         )
@@ -126,7 +125,7 @@ class ReactionGenerator:
         single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
     ):
 
-        self.rn = ReactionNetwork.from_input_entries(input_entries)
+        self.rn = ReactionGenerator(input_entries)
         self.rn.build()
         self.single_elem_interm_ignore = single_elem_interm_ignore
 

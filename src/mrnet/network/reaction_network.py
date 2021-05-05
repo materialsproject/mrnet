@@ -342,6 +342,7 @@ class ReactionPath(MSONable):
 Mapping_PR_Dict = Dict[int, Dict[int, ReactionPath]]
 
 
+
 class ReactionNetwork(MSONable):
     """
     Class to build a reaction network from entries
@@ -722,14 +723,6 @@ class ReactionNetwork(MSONable):
         self.num_starts = len(starts)
         self.PR_byproducts = {}  # type: Dict[int, Dict[str, int]]
 
-        if len(self.graph.nodes) == 0:
-            self.build()  # actually construct the graph
-        if self.PR_record is None:
-            self.PR_record = self.build_PR_record()  # get a dict of PRs
-        if self.Reactant_record is None:
-            self.Reactant_record = (
-                self.build_reactant_record()
-            )  # get a dict of non-PR reactants
         orig_graph = copy.deepcopy(self.graph)
 
         for start in starts:  # all the molecular nodes
@@ -1367,12 +1360,11 @@ class ReactionNetwork(MSONable):
 
         return self.PRs, paths, top_path_list
 
-    @staticmethod
-    def mols_w_cuttoff(RN_pr_solved, cutoff=0, build_pruned_network=True):
+    def mols_w_cuttoff(self, cutoff=0, build_pruned_network=True):
         """
         A method to identify molecules reached by dG <= cutoff
 
-        :param RN_pr_solved: instance of reaction network
+        :param self: instance of reaction network
         :param: cutoff: dG value
         :param: build_pruned_network: if true a network with pruned entries will be build
         :return: mols_to_keep: list of molecule nodes that can be reached by dG <= cutoff
@@ -1380,18 +1372,18 @@ class ReactionNetwork(MSONable):
         """
 
         pruned_PRs = {}
-        for PR_node in RN_pr_solved.PR_byproducts:
+        for PR_node in self.PR_byproducts:
             if (
-                RN_pr_solved.PRs[PR_node] != {}
-                and RN_pr_solved.PR_byproducts[PR_node] != {}
+                self.PRs[PR_node] != {}
+                and self.PR_byproducts[PR_node] != {}
             ):
-                min_start = RN_pr_solved.PR_byproducts[PR_node]["start"]
+                min_start = self.PR_byproducts[PR_node]["start"]
                 if (
-                    RN_pr_solved.PRs[PR_node][min_start].overall_free_energy_change
+                    self.PRs[PR_node][min_start].overall_free_energy_change
                     <= cutoff
                 ):
                     pruned_PRs[PR_node] = {}
-                    pruned_PRs[PR_node][min_start] = RN_pr_solved.PRs[PR_node][
+                    pruned_PRs[PR_node][min_start] = self.PRs[PR_node][
                         min_start
                     ]
 
@@ -1408,7 +1400,7 @@ class ReactionNetwork(MSONable):
         mols_to_keep.sort()
 
         pruned_entries_list = []
-        for entry in RN_pr_solved.entries_list:
+        for entry in self.entries_list:
             if entry.parameters["ind"] in mols_to_keep:
                 pruned_entries_list.append(entry)
 
@@ -1528,16 +1520,15 @@ class ReactionNetwork(MSONable):
 
         return self.matrix
 
-    @staticmethod
     def identify_concerted_rxns_via_intermediates(
-        RN,
+        self,
         mols_to_keep=None,
         single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
         update_matrix=False,
     ):
         """
             A method to identify concerted reactions via high enery intermediate molecules
-        :param RN: Reaction network built
+        :param self: Reaction network built
         :param mols_to_keep: List of pruned molecules, if not running then a list of all molecule nodes in the
         RN
         :param single_elem_interm_ignore: single_elem_interm_ignore: List of formula of high energy
@@ -1548,17 +1539,17 @@ class ReactionNetwork(MSONable):
 
         print("identify_concerted_rxns_via_intermediates start", time.time())
         if mols_to_keep is None:
-            mols_to_keep = list(range(0, len(RN.entries_list)))
+            mols_to_keep = list(range(0, len(self.entries_list)))
         if update_matrix:
-            RN.matrix2 = None
+            self.matrix2 = None
         reactions = []
         unique_reactions = []
-        for entry in RN.entries_list:
+        for entry in self.entries_list:
             (
                 unique_rxns,
                 rxns_with_nodes,
-            ) = RN.identify_concerted_rxns_for_specific_intermediate(
-                entry, RN, mols_to_keep, single_elem_interm_ignore, update_matrix
+            ) = self.identify_concerted_rxns_for_specific_intermediate(
+                entry, mols_to_keep, single_elem_interm_ignore, update_matrix
             )
             unique_reactions.append(unique_rxns)
             reactions.append(rxns_with_nodes)
@@ -1591,10 +1582,9 @@ class ReactionNetwork(MSONable):
                     matrix[reac][prod].append((nstr, reaction[2], "c"))
         return matrix
 
-    @staticmethod
     def identify_concerted_rxns_for_specific_intermediate(
+        self,
         entry: MoleculeEntry,
-        RN: RN_type,
         mols_to_keep=None,
         single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
         update_matrix=False,
@@ -1616,7 +1606,7 @@ class ReactionNetwork(MSONable):
         entry_ind = entry.parameters["ind"]  # type: int
 
         if mols_to_keep is None:
-            mols_to_keep = list(range(0, len(RN.entries_list)))
+            mols_to_keep = list(range(0, len(self.entries_list)))
         not_wanted_formula = single_elem_interm_ignore
 
         if (
@@ -1624,13 +1614,13 @@ class ReactionNetwork(MSONable):
             and entry.parameters["ind"] in mols_to_keep
         ):
 
-            if RN.matrix is None:
-                RN.build_matrix()
+            if self.matrix is None:
+                self.build_matrix()
             if update_matrix:
-                RN.matrix2 = copy.deepcopy(RN.matrix)
+                self.matrix2 = copy.deepcopy(self.matrix)
 
-            row = RN.matrix[entry_ind]  # type: ignore
-            col = RN.matrix_inverse[entry_ind]
+            row = self.matrix[entry_ind]  # type: ignore
+            col = self.matrix_inverse[entry_ind]
 
             for kr, vr in row.items():
                 for kc, vc in col.items():
@@ -1652,17 +1642,16 @@ class ReactionNetwork(MSONable):
                                         if update_matrix:
                                             reaction = (rxn1[0], rxn1[1], total_dG)
                                             ReactionNetwork.add_reactions_to_matrix(
-                                                RN.matrix2, reaction
+                                                self.matrix2, reaction
                                             )
 
         return rxn_from_filer_iter1, rxn_from_filer_iter1_nodes
 
-    @staticmethod
-    def add_concerted_rxns(RN, reactions):
+    def add_concerted_rxns(self, reactions):
         """
             A method to add concerted reactions (obtained from identify_concerted_rxns_via_intermediates() method)to
             the ReactonNetwork
-        :param RN: build Reaction Network
+        :param self: build Reaction Network
         :param reactions: list of reactions obtained from identify_concerted_rxns_via_intermediates() method
         :return: reaction network with concerted reactions added
         """
@@ -1673,79 +1662,79 @@ class ReactionNetwork(MSONable):
         c3 = 0
         c4 = 0
         mol_id_to_mol_entry_dict = {}
-        for i in RN.entries_list:
+        for i in self.entries_list:
             mol_id_to_mol_entry_dict[int(i.parameters["ind"])] = i
         for reaction in reactions:
             if len(reaction[0]) == 1 and len(reaction[1]) == 1:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
                 reactants = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 products = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 cr = ConcertedReaction([reactants], [products])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c1 = c1 + 1
 
             elif len(reaction[0]) == 1 and len(reaction[1]) == 2:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
-                assert int(reaction[1][1]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
+                assert int(reaction[1][1]) in self.graph.nodes
                 reactant_0 = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 product_0 = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 product_1 = mol_id_to_mol_entry_dict[int(reaction[1][1])]
                 cr = ConcertedReaction([reactant_0], [product_0, product_1])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
 
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c2 = c2 + 1
             elif len(reaction[0]) == 2 and len(reaction[1]) == 1:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[0][1]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[0][1]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
                 reactant_0 = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 PR = mol_id_to_mol_entry_dict[int(reaction[0][1])]
                 product_0 = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 cr = ConcertedReaction([reactant_0, PR], [product_0])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
 
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c3 = c3 + 1
             elif len(reaction[0]) == 2 and len(reaction[1]) == 2:
-                assert int(reaction[0][0]) in RN.graph.nodes
-                assert int(reaction[0][1]) in RN.graph.nodes
-                assert int(reaction[1][0]) in RN.graph.nodes
-                assert int(reaction[1][1]) in RN.graph.nodes
+                assert int(reaction[0][0]) in self.graph.nodes
+                assert int(reaction[0][1]) in self.graph.nodes
+                assert int(reaction[1][0]) in self.graph.nodes
+                assert int(reaction[1][1]) in self.graph.nodes
                 reactant_0 = mol_id_to_mol_entry_dict[int(reaction[0][0])]
                 PR = mol_id_to_mol_entry_dict[int(reaction[0][1])]
                 product_0 = mol_id_to_mol_entry_dict[int(reaction[1][0])]
                 product_1 = mol_id_to_mol_entry_dict[int(reaction[1][1])]
                 cr = ConcertedReaction([reactant_0, PR], [product_0, product_1])
-                cr.electron_free_energy = RN.electron_free_energy
+                cr.electron_free_energy = self.electron_free_energy
                 g = cr.graph_representation()
                 for node in list(g.nodes):
                     if not isinstance(node, int) and g.nodes[node]["free_energy"] > 0:
                         g.remove_node(node)
 
-                RN.add_reaction(g)
+                self.add_reaction(g)
                 c4 = c4 + 1
         total_num_concerted = c1 + c2 + c3 + c4
-        RN.PR_record = RN.build_PR_record()
-        RN.Reactant_record = RN.build_reactant_record()
+        self.PR_record = self.build_PR_record()
+        self.Reactant_record = self.build_reactant_record()
         print("number of concerted reactions added", total_num_concerted)
         print("add_concerted_rxns end", time.time())
-        return RN
+        return self
 
     def as_dict(self) -> dict:
         entries = dict()  # type: Dict[str, Dict[int, Dict[int, List[Dict[str, Any]]]]]
@@ -1915,3 +1904,343 @@ class ReactionNetwork(MSONable):
             min_cost,
             os.path.join(test_dir, "unittest_update_edge_weights_min_cost_IN.json"),
         )
+
+
+class ReactionGenerator(MSONable):
+    """
+    Class to build a reaction network from entries
+    """
+
+    def __init__(
+        self,
+        input_entries,
+        electron_free_energy=-2.15,
+        temperature=298.15,
+        solvent_dielectric=18.5,
+        solvent_refractive_index=1.415,
+        replace_ind=True,
+    ):
+        """
+        Generate a ReactionNetwork from a set of MoleculeEntries.
+
+        :param input_entries: list of MoleculeEntries which will make up the
+            network
+        :param electron_free_energy: float representing the Gibbs free energy
+            required to add an electron (in eV)
+        :param temperature: Temperature of the system, used for free energy
+            and rate constants (in K)
+        :param solvent_dielectric: Dielectric constant of the solvent medium
+        :param solvent_refractive_index: Refractive index of the solvent medium
+        :param replace_ind: True if reindex the entries if it there is already
+            indices in the input_entries
+        :return:
+        """
+
+        entries = dict()
+        entries_list = list()
+
+        print(len(input_entries), "input entries")
+
+        # Filter out unconnected entries, aka those that contain distinctly
+        # separate molecules which are not connected via a bond
+        connected_entries = list()
+        for entry in input_entries:
+            if len(entry.molecule) > 1:
+                if nx.is_weakly_connected(entry.graph):
+                    connected_entries.append(entry)
+            else:
+                connected_entries.append(entry)
+        print(len(connected_entries), "connected entries")
+
+        def get_formula(x):
+            return x.formula
+
+        def get_num_bonds(x):
+            return x.num_bonds
+
+        def get_charge(x):
+            return x.charge
+
+        def get_free_energy(x):
+            return x.get_free_energy(temperature=temperature)
+
+        # Sort by formula
+        sorted_entries_0 = sorted(connected_entries, key=get_formula)
+        for k1, g1 in itertools.groupby(sorted_entries_0, get_formula):
+            sorted_entries_1 = sorted(list(g1), key=get_num_bonds)
+            entries[k1] = dict()
+            # Sort by number of bonds
+            for k2, g2 in itertools.groupby(sorted_entries_1, get_num_bonds):
+                sorted_entries_2 = sorted(list(g2), key=get_charge)
+                entries[k1][k2] = dict()
+                # Sort by charge
+                for k3, g3 in itertools.groupby(sorted_entries_2, get_charge):
+                    sorted_entries_3 = sorted(list(g3), key=get_free_energy)
+                    if len(sorted_entries_3) > 1:
+                        unique = list()
+                        for entry in sorted_entries_3:
+                            isomorphic_found = False
+                            # Sort by graph isomorphism, taking the isomorphic
+                            # entry with the lowest free energy
+                            for ii, Uentry in enumerate(unique):
+                                if entry.mol_graph.isomorphic_to(Uentry.mol_graph):
+                                    isomorphic_found = True
+                                    if (
+                                        entry.get_free_energy() is not None
+                                        and Uentry.get_free_energy() is not None
+                                    ):
+                                        if entry.get_free_energy(
+                                            temperature
+                                        ) < Uentry.get_free_energy(temperature):
+                                            unique[ii] = entry
+                                    elif entry.get_free_energy() is not None:
+                                        unique[ii] = entry
+                                    elif entry.energy < Uentry.energy:
+                                        unique[ii] = entry
+                                    break
+                            if not isomorphic_found:
+                                unique.append(entry)
+                        entries[k1][k2][k3] = unique
+                    else:
+                        entries[k1][k2][k3] = sorted_entries_3
+                    for entry in entries[k1][k2][k3]:
+                        entries_list.append(entry)
+
+        print(len(entries_list), "unique entries")
+        # Add entry indices
+        if replace_ind:
+            for ii, entry in enumerate(entries_list):
+                entry.parameters["ind"] = ii
+
+        entries_list = sorted(entries_list, key=lambda x: x.parameters["ind"])
+
+        graph = nx.DiGraph()
+
+        self.electron_free_energy = electron_free_energy
+        self.temperature = temperature
+        self.solvent_dielectric = solvent_dielectric
+        self.solvent_refractive_index = solvent_refractive_index
+
+        self.entries = entries
+        self.entries_list = entries_list
+
+        self.graph = graph
+        self.reactions = list()
+
+
+        self.entry_ids = {e.entry_id for e in self.entries_list}
+        self.matrix = None
+        self.matrix_inverse = None
+
+
+
+    def build(
+        self,
+        reaction_types: Union[Set, FrozenSet] = frozenset(
+            {
+                "RedoxReaction",
+                "IntramolSingleBondChangeReaction",
+                "IntermolecularReaction",
+                "CoordinationBondChangeReaction",
+            }
+        ),
+        determine_atom_mappings: bool = True,
+        build_matrix=False,
+    ) -> nx.DiGraph:
+        """
+            A method to build the reaction network graph
+
+        :param reaction_types (set/frozenset): set/frozenset of all the reactions
+            class to include while building the graph
+        :param determine_atom_mappings (bool): If True (default), create an atom
+            mapping between reactants and products in a given reaction
+        :return: nx.DiGraph
+        """
+
+        print("build() start", time.time())
+
+        # Add molecule nodes
+        for entry in self.entries_list:
+            self.graph.add_node(entry.parameters["ind"], bipartite=0)
+
+        reaction_classes = [load_class(str(self.__module__), s) for s in reaction_types]
+
+        all_reactions = list()
+
+        # Generate reactions
+        for r in reaction_classes:
+            reactions = r.generate(
+                self.entries, determine_atom_mappings=determine_atom_mappings
+            )  # review
+            all_reactions.append(reactions)
+
+        all_reactions = [i for i in all_reactions if i]
+        self.reactions = list(itertools.chain.from_iterable(all_reactions))
+
+        redox_c = 0
+        inter_c = 0
+        intra_c = 0
+        coord_c = 0
+
+        for ii, r in enumerate(self.reactions):
+            r.parameters["ind"] = ii
+            if r.__class__.__name__ == "RedoxReaction":
+                redox_c += 1
+                r.electron_free_energy = self.electron_free_energy
+                r.set_free_energy()
+                r.set_rate_constant()
+            elif r.__class__.__name__ == "IntramolSingleBondChangeReaction":
+                intra_c += 1
+            elif r.__class__.__name__ == "IntermolecularReaction":
+                inter_c += 1
+            elif r.__class__.__name__ == "CoordinationBondChangeReaction":
+                coord_c += 1
+            self.add_reaction(r.graph_representation())  # add graph element here
+
+        print(
+            "redox: ",
+            redox_c,
+            "inter: ",
+            inter_c,
+            "intra: ",
+            intra_c,
+            "coord: ",
+            coord_c,
+        )
+
+        if build_matrix:
+            self.build_matrix()
+
+        print("build() end", time.time())
+
+
+    def add_reaction(self, graph_representation: nx.DiGraph):
+        """
+            A method to add a single reaction to the ReactionNetwork.graph
+            attribute
+        :param graph_representation: Graph representation of a reaction,
+            obtained from ReactionClass.graph_representation
+        """
+        self.graph.add_nodes_from(graph_representation.nodes(data=True))
+        self.graph.add_edges_from(graph_representation.edges(data=True))
+
+
+
+
+    def build_matrix(self) -> Dict[int, Dict[int, List[Tuple]]]:
+        """
+        A method to build a spare adjacency matrix using dictionaries.
+        :return: nested dictionary {r1:{c1:[],c2:[]}, r2:{c1:[],c2:[]}}
+        """
+        self.matrix = {}
+        for i in range(len(self.entries_list)):
+            self.matrix[i] = {}
+        for node in self.graph.nodes:
+            if isinstance(node, str):
+                if "electron" not in self.graph.nodes[node]["rxn_type"]:
+                    in_node = list(self.graph.predecessors(node))
+                    out_nodes = list(self.graph.successors(node))
+                    edges = []
+                    for u in in_node:
+                        for v in out_nodes:
+                            edges.append((u, v))
+                    for e in edges:
+                        if e[1] not in self.matrix[e[0]].keys():
+                            self.matrix[e[0]][e[1]] = [
+                                (node, self.graph.nodes[node]["free_energy"], "e")
+                            ]
+                        else:
+                            self.matrix[e[0]][e[1]].append(
+                                (node, self.graph.nodes[node]["free_energy"], "e")
+                            )
+        self.matrix_inverse = {}
+        for i in range(len(self.matrix)):
+            self.matrix_inverse[i] = {}
+            for k, v in self.matrix.items():
+                if i in v.keys():
+                    self.matrix_inverse[i][k] = v[i]
+
+        return self.matrix
+
+
+    @staticmethod
+    def add_reactions_to_matrix(matrix, reaction):
+        """
+        A method to add new concerted reactions to the matrix which is already built from elemetary reactions.
+        :param matrix: matrix which is already built from elemetary reactions, self.matrix
+        :param reaction: concerted reaction to add to the matrix, (1,2], [3,4], total_dG)
+        :return: matrix updated with the reaction
+        """
+        nstr = ReactionNetwork.generate_node_string(reaction[0], reaction[1])
+        for reac in reaction[0]:
+            for prod in reaction[1]:
+                if prod not in matrix[reac].keys():
+                    matrix[reac][prod] = [(nstr, reaction[2], "c")]
+                else:
+                    matrix[reac][prod].append((nstr, reaction[2], "c"))
+        return matrix
+
+    def identify_concerted_rxns_for_specific_intermediate(
+        self,
+        entry: MoleculeEntry,
+        mols_to_keep=None,
+        single_elem_interm_ignore=["C1", "H1", "O1", "Li1", "P1", "F1"],
+        update_matrix=False,
+    ):
+
+        """
+            A method to identify concerted reactions via specific high enery intermediate molecule
+        :param entry: MoleculeEntry to act as high energy intermediate
+        :param RN: Reaction network built
+        :param mols_to_keep: List of pruned molecules, if not running then a list of all molecule nodes
+        in the RN_pr_solved
+        :param single_elem_interm_ignore: single_elem_interm_ignore: List of formula of high energy
+        intermediates to ignore
+        :return: list of reactions
+        """
+
+        rxn_from_filer_iter1 = []
+        rxn_from_filer_iter1_nodes = []
+        entry_ind = entry.parameters["ind"]  # type: int
+
+        if mols_to_keep is None:
+            mols_to_keep = list(range(0, len(self.entries_list)))
+        not_wanted_formula = single_elem_interm_ignore
+
+        if (
+            entry.formula not in not_wanted_formula
+            and entry.parameters["ind"] in mols_to_keep
+        ):
+
+            if self.matrix is None:
+                self.build_matrix()
+            if update_matrix:
+                self.matrix2 = copy.deepcopy(self.matrix)
+
+            row = self.matrix[entry_ind]  # type: ignore
+            col = self.matrix_inverse[entry_ind]
+
+            for kr, vr in row.items():
+                for kc, vc in col.items():
+                    if kr != kc:
+                        for s2 in vr:
+                            for e2 in vc:
+                                incoming_reaction_dG = e2[1]
+                                total_dG = s2[1] + e2[1]
+                                if incoming_reaction_dG > 0 and total_dG < 0:
+                                    (
+                                        rxn1,
+                                        rxn1_nodes,
+                                    ) = ReactionNetwork.concerted_reaction_filter(
+                                        e2[0], s2[0]
+                                    )
+                                    if rxn1 is not None:
+                                        rxn_from_filer_iter1.append(rxn1)
+                                        rxn_from_filer_iter1_nodes.append(rxn1_nodes)
+                                        if update_matrix:
+                                            reaction = (rxn1[0], rxn1[1], total_dG)
+                                            ReactionNetwork.add_reactions_to_matrix(
+                                                self.matrix2, reaction
+                                            )
+
+        return rxn_from_filer_iter1, rxn_from_filer_iter1_nodes
